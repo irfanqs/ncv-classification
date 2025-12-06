@@ -1,0 +1,259 @@
+================================================================================
+NCV CLASSIFICATION SYSTEM - ARCHITECTURE DIAGRAM
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          NCV CLASSIFICATION PIPELINE                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: DATA LOADING                                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  data/NCV/                                                                   │
+│  ├── non_cts/                                                                │
+│  │   ├── patient001.csv  ──┐                                                │
+│  │   └── patient002.csv  ──┤                                                │
+│  ├── mild/                 │                                                │
+│  │   └── patient010.csv  ──┤                                                │
+│  ├── moderate/             ├──► NCVDataLoader                               │
+│  │   └── patient020.csv  ──┤   - scan_ncv_files()                          │
+│  └── severe/               │   - load_single_file()                         │
+│      └── patient030.csv  ──┘   - extract_features()                         │
+│                                                                              │
+│  Output: X (n_samples, n_features), y (n_samples,)                          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: PREPROCESSING                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVPreprocessor                                                             │
+│  ├── handle_missing_values()  ──► Replace NaN with mean                     │
+│  ├── fit_scaler()             ──► StandardScaler / MinMaxScaler             │
+│  ├── transform()              ──► Normalize features                        │
+│  └── augment_data()           ──► Add Gaussian noise (optional)             │
+│                                                                              │
+│  Input:  X_raw (n, features)                                                │
+│  Output: X_normalized (n, features)                                         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: DATA SPLITTING                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVTrainer.split_data()                                                     │
+│                                                                              │
+│  X_normalized ──┬──► Train (70%)  ──► X_train, y_train                      │
+│                 ├──► Val   (15%)  ──► X_val,   y_val                        │
+│                 └──► Test  (15%)  ──► X_test,  y_test                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: MODEL BUILDING                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVModelBuilder                                                             │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MODEL 1: 1D CNN                                                     │    │
+│  ├────────────────────────────────────────────────────────────────────┤    │
+│  │ Input (n_features, 1)                                               │    │
+│  │   ↓                                                                 │    │
+│  │ Conv1D(64) → BatchNorm → ReLU → MaxPool → Dropout                  │    │
+│  │   ↓                                                                 │    │
+│  │ Conv1D(128) → BatchNorm → ReLU → MaxPool → Dropout                 │    │
+│  │   ↓                                                                 │    │
+│  │ Conv1D(256) → BatchNorm → ReLU → GlobalAvgPool → Dropout           │    │
+│  │   ↓                                                                 │    │
+│  │ Dense(128) → Dropout → Dense(64) → Dropout                         │    │
+│  │   ↓                                                                 │    │
+│  │ Dense(4) → Softmax                                                  │    │
+│  │   ↓                                                                 │    │
+│  │ Output: [P(non_cts), P(mild), P(moderate), P(severe)]              │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MODEL 2: LSTM                                                       │    │
+│  ├────────────────────────────────────────────────────────────────────┤    │
+│  │ Input (n_features, 1)                                               │    │
+│  │   ↓                                                                 │    │
+│  │ Bidirectional LSTM(64) → Dropout                                   │    │
+│  │   ↓                                                                 │    │
+│  │ Bidirectional LSTM(32) → Dropout                                   │    │
+│  │   ↓                                                                 │    │
+│  │ Dense(128) → Dropout → Dense(64) → Dropout                         │    │
+│  │   ↓                                                                 │    │
+│  │ Dense(4) → Softmax                                                  │    │
+│  │   ↓                                                                 │    │
+│  │ Output: [P(non_cts), P(mild), P(moderate), P(severe)]              │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MODEL 3: CNN-LSTM Hybrid                                            │    │
+│  ├────────────────────────────────────────────────────────────────────┤    │
+│  │ Input (n_features, 1)                                               │    │
+│  │   ↓                                                                 │    │
+│  │ Conv1D(64) → BatchNorm → ReLU → MaxPool → Dropout                  │    │
+│  │   ↓                                                                 │    │
+│  │ Conv1D(128) → BatchNorm → ReLU → MaxPool → Dropout                 │    │
+│  │   ↓                                                                 │    │
+│  │ Bidirectional LSTM(64) → Dropout                                   │    │
+│  │   ↓                                                                 │    │
+│  │ Bidirectional LSTM(32) → Dropout                                   │    │
+│  │   ↓                                                                 │    │
+│  │ Dense(128) → Dense(4) → Softmax                                    │    │
+│  │   ↓                                                                 │    │
+│  │ Output: [P(non_cts), P(mild), P(moderate), P(severe)]              │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: TRAINING                                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVTrainer.train_model()                                                    │
+│                                                                              │
+│  For each model:                                                             │
+│  ┌──────────────────────────────────────────────────────────────────┐      │
+│  │ Epoch 1:  Train on X_train → Validate on X_val                   │      │
+│  │ Epoch 2:  Train on X_train → Validate on X_val                   │      │
+│  │ ...                                                               │      │
+│  │ Epoch 100: Train on X_train → Validate on X_val                  │      │
+│  │                                                                   │      │
+│  │ Callbacks:                                                        │      │
+│  │ - EarlyStopping (patience=15)                                    │      │
+│  │ - ReduceLROnPlateau (patience=7)                                 │      │
+│  │ - ModelCheckpoint (save best)                                    │      │
+│  └──────────────────────────────────────────────────────────────────┘      │
+│                                                                              │
+│  Output: Trained models (.h5 files)                                         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 6: EVALUATION                                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVEvaluator.evaluate_model()                                               │
+│                                                                              │
+│  For each model:                                                             │
+│  ┌──────────────────────────────────────────────────────────────────┐      │
+│  │ Predict on X_test                                                 │      │
+│  │   ↓                                                               │      │
+│  │ Calculate metrics:                                                │      │
+│  │ - Accuracy                                                        │      │
+│  │ - Precision (per class & weighted)                               │      │
+│  │ - Recall (per class & weighted)                                  │      │
+│  │ - F1-Score (per class & weighted)                                │      │
+│  │ - Confusion Matrix                                                │      │
+│  │   ↓                                                               │      │
+│  │ Generate plots:                                                   │      │
+│  │ - Confusion matrix heatmap                                        │      │
+│  │ - Model comparison bar chart                                     │      │
+│  └──────────────────────────────────────────────────────────────────┘      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 7: CROSS VALIDATION (Optional)                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  NCVCrossValidator.cross_validate()                                          │
+│                                                                              │
+│  5-Fold Stratified Cross Validation:                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐      │
+│  │ Fold 1: Train on 80% → Validate on 20% → Accuracy: 0.82          │      │
+│  │ Fold 2: Train on 80% → Validate on 20% → Accuracy: 0.79          │      │
+│  │ Fold 3: Train on 80% → Validate on 20% → Accuracy: 0.84          │      │
+│  │ Fold 4: Train on 80% → Validate on 20% → Accuracy: 0.81          │      │
+│  │ Fold 5: Train on 80% → Validate on 20% → Accuracy: 0.83          │      │
+│  │                                                                   │      │
+│  │ Mean Accuracy: 0.818 ± 0.018                                     │      │
+│  └──────────────────────────────────────────────────────────────────┘      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 8: RESULTS & REPORTING                                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  experiments_ncv/ncv_classification_YYYYMMDD_HHMMSS/                         │
+│  ├── FINAL_REPORT.md                                                         │
+│  │   ├── Dataset summary                                                    │
+│  │   ├── Model architectures                                                │
+│  │   ├── Performance comparison                                             │
+│  │   └── Best model recommendation                                          │
+│  │                                                                           │
+│  ├── models/                                                                 │
+│  │   ├── ncv_cnn_best.h5         (Best CNN model)                          │
+│  │   ├── ncv_lstm_best.h5        (Best LSTM model)                         │
+│  │   └── ncv_cnn_lstm_best.h5    (Best Hybrid model)                       │
+│  │                                                                           │
+│  ├── plots/                                                                  │
+│  │   ├── all_confusion_matrices.png                                         │
+│  │   └── model_comparison.png                                               │
+│  │                                                                           │
+│  └── results/                                                                │
+│      ├── model_comparison.csv                                               │
+│      └── cv_results.csv                                                     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+COMPARISON: EMG vs NCV PIPELINES
+================================================================================
+
+┌─────────────────────────────────────┬─────────────────────────────────────┐
+│ EMG PIPELINE                        │ NCV PIPELINE                        │
+├─────────────────────────────────────┼─────────────────────────────────────┤
+│                                     │                                     │
+│ Raw Signal (.txt)                   │ CSV Features (.csv)                 │
+│   ↓                                 │   ↓                                 │
+│ Bandpass Filter (20-500 Hz)        │ Handle Missing Values               │
+│   ↓                                 │   ↓                                 │
+│ Notch Filter (50 Hz)                │ Normalization (Z-score)             │
+│   ↓                                 │   ↓                                 │
+│ Segmentation (40ms)                 │ Augmentation (Gaussian)             │
+│   ↓                                 │   ↓                                 │
+│ STFT (window=256)                   │ Reshape (n_features, 1)             │
+│   ↓                                 │   ↓                                 │
+│ Spectrogram (256×256)               │ 1D Input                            │
+│   ↓                                 │   ↓                                 │
+│ 2D CNN                              │ 1D CNN / LSTM                       │
+│   ↓                                 │   ↓                                 │
+│ Classification                      │ Classification                      │
+│                                     │                                     │
+│ Time: 2-3 hours                     │ Time: 30-60 minutes                 │
+│ Accuracy: 60-75%                    │ Accuracy: 70-85%                    │
+│ GPU: Required                       │ GPU: Optional                       │
+│ Memory: 8-16 GB                     │ Memory: 2-4 GB                      │
+│                                     │                                     │
+└─────────────────────────────────────┴─────────────────────────────────────┘
+
+================================================================================
+KEY COMPONENTS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ncv_main.py          │ Main pipeline orchestrator                           │
+│ ncv_models.py        │ Model architectures (CNN, LSTM, Hybrid)              │
+│ ncv_data_loader.py   │ Load and parse CSV files                             │
+│ ncv_preprocessing.py │ Normalization and augmentation                       │
+│ ncv_train.py         │ Training loop and cross-validation                   │
+│ ncv_evaluate.py      │ Metrics calculation and visualization                │
+│ ncv_config.json      │ Configuration parameters                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================

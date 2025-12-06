@@ -1,0 +1,88 @@
+NCV_Classification/
+│
+├── README.md                           # Main documentation
+├── GETTING_STARTED.md                  # Quick start guide
+├── requirements.txt                    # Python dependencies
+├── ncv_config.json                     # Configuration file
+├── ncv_main.py                         # Main pipeline script
+├── test_ncv_pipeline.py                # Quick test script
+├── .gitignore                          # Git ignore rules
+│
+├── src/                                # Source code modules
+│   ├── __init__.py
+│   ├── ncv_data_loader.py              # Load CSV/Excel files
+│   ├── ncv_preprocessing.py            # Normalization & augmentation
+│   ├── ncv_models.py                   # CNN, LSTM, CNN-LSTM models
+│   ├── ncv_train.py                    # Training & cross-validation
+│   └── ncv_evaluate.py                 # Evaluation & metrics
+│
+├── utils/                              # Utility scripts
+│   ├── __init__.py
+│   └── create_sample_ncv_data.py       # Generate sample data
+│
+├── data/                               # Data directory
+│   ├── README.md                       # Data documentation
+│   ├── NCV_SIGNAL_DATA_INFO.md         # NCV signal data information
+│   ├── NCV/                            # NCV tabular data (for classification)
+│   │   ├── non_cts/
+│   │   ├── mild/
+│   │   ├── moderate/
+│   │   └── severe/
+│   ├── Full_Data/                      # NCV signal data - complete (reference)
+│   │   ├── non_cts/
+│   │   ├── mild/
+│   │   ├── moderate/
+│   │   └── severe/
+│   ├── Motorik/                        # NCV signal data - motor (reference)
+│   │   ├── non_cts/
+│   │   ├── mild/
+│   │   ├── moderate/
+│   │   └── severe/
+│   └── Sensorik/                       # NCV signal data - sensory (reference)
+│       ├── non_cts/
+│       ├── mild/
+│       ├── moderate/
+│       └── severe/
+│
+└── docs/                               # Documentation
+    ├── NCV_INDEX.md                    # Navigation & index
+    ├── NCV_QUICK_START.md              # Quick start guide
+    ├── NCV_CHECKLIST.md                # Complete checklist
+    ├── NCV_SUMMARY.txt                 # Summary overview
+    ├── EMG_vs_NCV_COMPARISON.md        # EMG vs NCV comparison
+    └── ARCHITECTURE_DIAGRAM.txt        # System architecture
+
+After running pipeline:
+│
+├── experiments_ncv/                    # Experiment results (auto-generated)
+│   └── ncv_classification_YYYYMMDD_HHMMSS/
+│       ├── FINAL_REPORT.md             # Results summary
+│       ├── config.json                 # Saved configuration
+│       ├── models/                     # Trained models
+│       │   ├── ncv_cnn_best.h5
+│       │   ├── ncv_lstm_best.h5
+│       │   └── ncv_cnn_lstm_best.h5
+│       ├── plots/                      # Visualizations
+│       │   ├── all_confusion_matrices.png
+│       │   └── model_comparison.png
+│       └── results/                    # Metrics
+│           ├── model_comparison.csv
+│           └── cv_results.csv
+
+================================================================================
+QUICK COMMANDS:
+================================================================================
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Generate sample data
+python utils/create_sample_ncv_data.py
+
+# Quick test (10 min)
+python test_ncv_pipeline.py
+
+# Full pipeline (30-60 min)
+python ncv_main.py
+
+================================================================================

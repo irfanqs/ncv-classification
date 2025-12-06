@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "name": "NCV CTS Classification",
+    "version": "1.0.0",
+    "description": "CTS Severity Detection from NCV Data",
+    "author": "",
+    "date_created": "2024-12-06"
+  },
+
+  "data": {
+    "base_directory": "data/NCV",
+    "classes": ["non_cts", "mild", "moderate", "severe"],
+    "class_mapping": {
+      "non_cts": 0,
+      "mild": 1,
+      "moderate": 2,
+      "severe": 3
+    },
+    "file_extensions": [".csv", ".xlsx", ".txt"],
+    "max_files_per_class": null
+  },
+
+  "features": {
+    "motor_features": [
+      "distal_latency",
+      "amplitude",
+      "conduction_velocity",
+      "f_wave_latency"
+    ],
+    "sensory_features": [
+      "peak_latency",
+      "amplitude",
+      "conduction_velocity"
+    ],
+    "use_motor": true,
+    "use_sensory": true,
+    "normalization": "standard"
+  },
+
+  "models": {
+    "available_models": [
+      {
+        "name": "ncv_cnn",
+        "type": "cnn_1d",
+        "description": "1D CNN for NCV feature extraction"
+      },
+      {
+        "name": "ncv_lstm",
+        "type": "lstm",
+        "description": "LSTM for temporal NCV patterns"
+      },
+      {
+        "name": "ncv_cnn_lstm",
+        "type": "cnn_lstm_hybrid",
+        "description": "Hybrid CNN-LSTM for NCV"
+      }
+    ]
+  },
+
+  "training": {
+    "data_split": {
+      "train_size": 0.7,
+      "validation_size": 0.15,
+      "test_size": 0.15,
+      "stratify": true,
+      "random_state": 42
+    },
+    "hyperparameters": {
+      "epochs": 100,
+      "batch_size": 16,
+      "learning_rate": 0.001,
+      "optimizer": "adam"
+    },
+    "callbacks": {
+      "early_stopping": {
+        "enabled": true,
+        "patience": 15,
+        "monitor": "val_accuracy"
+      },
+      "reduce_lr": {
+        "enabled": true,
+        "patience": 7,
+        "factor": 0.5
+      }
+    }
+  },
+
+  "cross_validation": {
+    "enabled": true,
+    "n_splits": 5,
+    "stratify": true
+  },
+
+  "output": {
+    "experiments_dir": "experiments_ncv",
+    "save_models": true,
+    "save_plots": true,
+    "generate_report": true
+  }
+}

@@ -1,0 +1,7 @@
+# Place your NCV CSV files here
+# Structure:
+# NCV/
+# ├── non_cts/
+# ├── mild/
+# ├── moderate/
+# └── severe/

@@ -1,0 +1,97 @@
+{
+  "project_info": {
+    "name": "NCV Signal Classification",
+    "version": "1.0.0",
+    "description": "CTS Severity Detection from NCV Signal Waveforms",
+    "author": "",
+    "date_created": "2024-12-06"
+  },
+
+  "data": {
+    "base_directory": "data/Full_Data",
+    "classes": ["non_cts", "mild", "moderate", "severe"],
+    "class_mapping": {
+      "non_cts": 0,
+      "mild": 1,
+      "moderate": 2,
+      "severe": 3
+    },
+    "max_files_per_class": null
+  },
+
+  "signal_processing": {
+    "sampling_rate": 12804,
+    "apply_bandpass_filter": true,
+    "bandpass_lowcut": 10,
+    "bandpass_highcut": 2500,
+    "bandpass_order": 4
+  },
+
+  "feature_extraction": {
+    "extract_latency": true,
+    "extract_amplitude": true,
+    "extract_statistical": true,
+    "extract_frequency": true
+  },
+
+  "models": {
+    "available_models": [
+      {
+        "name": "ncv_signal_dense",
+        "type": "dense_nn",
+        "description": "Dense Neural Network for NCV features"
+      },
+      {
+        "name": "ncv_signal_cnn",
+        "type": "cnn_1d",
+        "description": "1D CNN for NCV features"
+      },
+      {
+        "name": "ncv_signal_lstm",
+        "type": "lstm",
+        "description": "LSTM for NCV features"
+      }
+    ]
+  },
+
+  "training": {
+    "data_split": {
+      "train_size": 0.7,
+      "validation_size": 0.15,
+      "test_size": 0.15,
+      "stratify": true,
+      "random_state": 42
+    },
+    "hyperparameters": {
+      "epochs": 100,
+      "batch_size": 16,
+      "learning_rate": 0.001,
+      "optimizer": "adam"
+    },
+    "callbacks": {
+      "early_stopping": {
+        "enabled": true,
+        "patience": 15,
+        "monitor": "val_accuracy"
+      },
+      "reduce_lr": {
+        "enabled": true,
+        "patience": 7,
+        "factor": 0.5
+      }
+    }
+  },
+
+  "cross_validation": {
+    "enabled": true,
+    "n_splits": 5,
+    "stratify": true
+  },
+
+  "output": {
+    "experiments_dir": "experiments_ncv_signal",
+    "save_models": true,
+    "save_plots": true,
+    "generate_report": true
+  }
+}
