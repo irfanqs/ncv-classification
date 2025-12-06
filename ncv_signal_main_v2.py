@@ -9,9 +9,7 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import from existing EMG preprocessing
-import sys
-sys.path.insert(0, '..')
+# Import EMG preprocessor (works for any time-series signal)
 from data_preprocessing import EMGPreprocessor
 
 from ncv_signal_data_loader import NCVSignalDataLoader
