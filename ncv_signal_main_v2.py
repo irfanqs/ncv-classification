@@ -114,17 +114,53 @@ class NCVSignalPipelineV2:
             )
             
             if spectrograms is not None and len(spectrograms) > 0:
-                all_spectrograms.extend(spectrograms)
+                # Debug first spectrogram shape
+                if idx == 0:
+                    print(f"\n  First spectrogram shape: {spectrograms[0].shape}")
+                    print(f"  Number of spectrograms from first signal: {len(spectrograms)}")
+                
+                # Process each spectrogram
+                for spec in spectrograms:
+                    # Ensure 2D spectrogram
+                    if len(spec.shape) > 2:
+                        spec = spec.squeeze()
+                    
+                    # Resize to 256x256 if needed
+                    if spec.shape != (256, 256):
+                        from scipy.ndimage import zoom
+                        zoom_factors = (256 / spec.shape[0], 256 / spec.shape[1])
+                        spec = zoom(spec, zoom_factors, order=1)
+                    
+                    all_spectrograms.append(spec)
                 all_labels.extend([label] * len(spectrograms))
             
             if (idx + 1) % 50 == 0:
                 print(f"  Processed {idx + 1}/{len(self.signals)} signals")
         
+        if not all_spectrograms:
+            raise ValueError("No spectrograms generated!")
+        
+        # Check shape before converting to array
+        print(f"\n  Total spectrograms collected: {len(all_spectrograms)}")
+        print(f"  Sample spectrogram shape: {all_spectrograms[0].shape}")
+        
         self.spectrograms = np.array(all_spectrograms)
         self.y_spectrograms = np.array(all_labels)
         
+        print(f"\n  After np.array conversion: {self.spectrograms.shape}")
+        
+        # Ensure correct shape for Conv2D: (n_samples, height, width, channels)
+        if len(self.spectrograms.shape) == 3:
+            # Shape is (n_samples, height, width) -> add channel
+            self.spectrograms = np.expand_dims(self.spectrograms, axis=-1)
+            print(f"  ✓ Added channel dimension: {self.spectrograms.shape}")
+        elif len(self.spectrograms.shape) == 4:
+            print(f"  ✓ Already has 4 dimensions: {self.spectrograms.shape}")
+        else:
+            raise ValueError(f"Unexpected spectrogram shape: {self.spectrograms.shape}")
+        
         print(f"\nGenerated {len(self.spectrograms)} spectrograms")
-        print(f"  Shape: {self.spectrograms.shape}")
+        print(f"  Final shape: {self.spectrograms.shape}")
         
         return self.spectrograms, self.y_spectrograms
     

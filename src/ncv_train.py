@@ -101,9 +101,13 @@ class NCVTrainer:
         """Train single model"""
         train_config = self.config['training']['hyperparameters']
         
-        # Reshape untuk CNN/LSTM (tambah dimension)
-        X_train = split_data['X_train'].reshape(split_data['X_train'].shape[0], -1, 1)
-        X_val = split_data['X_val'].reshape(split_data['X_val'].shape[0], -1, 1)
+        # Get data (no reshape for spectrograms - they're already in correct shape)
+        X_train = split_data['X_train']
+        X_val = split_data['X_val']
+        
+        # Debug: print shapes
+        print(f"\n  Training data shape: {X_train.shape}")
+        print(f"  Validation data shape: {X_val.shape}")
         
         # Class weights
         class_weights = self.compute_class_weights(split_data['y_train'])
@@ -164,9 +168,8 @@ class NCVCrossValidator:
             X_train, X_val = X[train_idx], X[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
             
-            # Reshape
-            X_train = X_train.reshape(X_train.shape[0], -1, 1)
-            X_val = X_val.reshape(X_val.shape[0], -1, 1)
+            # No reshape needed for spectrograms
+            # X_train and X_val already have correct shape from split
             
             # Build fresh model
             from src.ncv_models import NCVModelBuilder, compile_model
